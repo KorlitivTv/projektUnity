@@ -1,14 +1,21 @@
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class GameUI : MonoBehaviour
 {
+    public static GameUI Instance { get; private set; }
+
     [Header("Text Labels")]
-    [SerializeField] private Text healthText;
-    [SerializeField] private Text waveText;
-    [SerializeField] private Text enemiesText;
-    [SerializeField] private Text scoreText;
+    [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private TextMeshProUGUI waveText;
+    [SerializeField] private TextMeshProUGUI enemiesText;
+    [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private GameObject gameOverPanel;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -16,6 +23,11 @@ public class GameUI : MonoBehaviour
         {
             gameOverPanel.SetActive(false);
         }
+
+        SetHealth(5, 5);
+        SetWave(1);
+        SetEnemies(0);
+        SetScore(0);
     }
 
     public void SetHealth(int currentHealth, int maxHealth)
