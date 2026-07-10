@@ -3,8 +3,16 @@ using UnityEngine;
 
 public class WaveSpawner : MonoBehaviour
 {
+    [Header("Enemy")]
     [SerializeField] private GameObject enemyPrefab;
-    [SerializeField] private Transform[] spawnPoints;
+
+    [Header("Automatic Spawn Around Camera")]
+    [SerializeField] private Camera targetCamera;
+    [SerializeField] private float spawnDistanceOutsideView = 2f;
+    [SerializeField] private int maxSpawnTries = 20;
+    [SerializeField] private LayerMask blockedSpawnLayers;
+
+    [Header("Wave Settings")]
     [SerializeField] private float timeBetweenSpawns = 0.75f;
     [SerializeField] private float timeBetweenWaves = 3f;
     [SerializeField] private int enemiesInFirstWave = 3;
@@ -13,6 +21,14 @@ public class WaveSpawner : MonoBehaviour
     private static int enemiesAlive;
     private int currentWave;
     private bool spawningWave;
+
+    private void Awake()
+    {
+        if (targetCamera == null)
+        {
+            targetCamera = Camera.main;
+        }
+    }
 
     private void Start()
     {
@@ -49,15 +65,61 @@ public class WaveSpawner : MonoBehaviour
 
     private void SpawnEnemy()
     {
-        if (enemyPrefab == null || spawnPoints == null || spawnPoints.Length == 0)
+        if (enemyPrefab == null)
         {
-            Debug.LogWarning("WaveSpawner is missing enemy prefab or spawn points.");
+            Debug.LogWarning("WaveSpawner is missing enemy prefab.");
             return;
         }
 
-        Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
-        Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
+        Vector2 spawnPosition = GetSpawnPositionOutsideCamera();
+        Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
         enemiesAlive++;
+    }
+
+    private Vector2 GetSpawnPositionOutsideCamera()
+    {
+        if (targetCamera == null)
+        {
+            return transform.position;
+        }
+
+        float cameraHeight = targetCamera.orthographicSize;
+        float cameraWidth = cameraHeight * targetCamera.aspect;
+        Vector2 cameraPosition = targetCamera.transform.position;
+
+        for (int i = 0; i < maxSpawnTries; i++)
+        {
+            int side = Random.Range(0, 4);
+            Vector2 spawnPosition = cameraPosition;
+
+            switch (side)
+            {
+                case 0: // top
+                    spawnPosition.x += Random.Range(-cameraWidth, cameraWidth);
+                    spawnPosition.y += cameraHeight + spawnDistanceOutsideView;
+                    break;
+                case 1: // bottom
+                    spawnPosition.x += Random.Range(-cameraWidth, cameraWidth);
+                    spawnPosition.y -= cameraHeight + spawnDistanceOutsideView;
+                    break;
+                case 2: // left
+                    spawnPosition.x -= cameraWidth + spawnDistanceOutsideView;
+                    spawnPosition.y += Random.Range(-cameraHeight, cameraHeight);
+                    break;
+                default: // right
+                    spawnPosition.x += cameraWidth + spawnDistanceOutsideView;
+                    spawnPosition.y += Random.Range(-cameraHeight, cameraHeight);
+                    break;
+            }
+
+            bool blocked = Physics2D.OverlapCircle(spawnPosition, 0.3f, blockedSpawnLayers);
+            if (!blocked)
+            {
+                return spawnPosition;
+            }
+        }
+
+        return cameraPosition + Random.insideUnitCircle.normalized * (cameraHeight + spawnDistanceOutsideView);
     }
 
     public static void EnemyDefeated()
