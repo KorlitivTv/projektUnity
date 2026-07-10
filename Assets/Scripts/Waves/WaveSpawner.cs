@@ -17,13 +17,21 @@ public class WaveSpawner : MonoBehaviour
     [SerializeField] private float timeBetweenWaves = 3f;
     [SerializeField] private int enemiesInFirstWave = 3;
     [SerializeField] private int enemiesAddedPerWave = 2;
+    [SerializeField] private int scorePerEnemy = 10;
 
+    private static WaveSpawner instance;
     private static int enemiesAlive;
+    private static int score;
+
     private int currentWave;
     private bool spawningWave;
 
     private void Awake()
     {
+        instance = this;
+        enemiesAlive = 0;
+        score = 0;
+
         if (targetCamera == null)
         {
             targetCamera = Camera.main;
@@ -32,6 +40,7 @@ public class WaveSpawner : MonoBehaviour
 
     private void Start()
     {
+        UpdateUI();
         StartCoroutine(StartNextWave());
     }
 
@@ -49,6 +58,7 @@ public class WaveSpawner : MonoBehaviour
         currentWave++;
 
         Debug.Log("Wave " + currentWave);
+        UpdateUI();
 
         yield return new WaitForSeconds(timeBetweenWaves);
 
@@ -74,6 +84,7 @@ public class WaveSpawner : MonoBehaviour
         Vector2 spawnPosition = GetSpawnPositionOutsideCamera();
         Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
         enemiesAlive++;
+        UpdateUI();
     }
 
     private Vector2 GetSpawnPositionOutsideCamera()
@@ -94,19 +105,19 @@ public class WaveSpawner : MonoBehaviour
 
             switch (side)
             {
-                case 0: // top
+                case 0:
                     spawnPosition.x += Random.Range(-cameraWidth, cameraWidth);
                     spawnPosition.y += cameraHeight + spawnDistanceOutsideView;
                     break;
-                case 1: // bottom
+                case 1:
                     spawnPosition.x += Random.Range(-cameraWidth, cameraWidth);
                     spawnPosition.y -= cameraHeight + spawnDistanceOutsideView;
                     break;
-                case 2: // left
+                case 2:
                     spawnPosition.x -= cameraWidth + spawnDistanceOutsideView;
                     spawnPosition.y += Random.Range(-cameraHeight, cameraHeight);
                     break;
-                default: // right
+                default:
                     spawnPosition.x += cameraWidth + spawnDistanceOutsideView;
                     spawnPosition.y += Random.Range(-cameraHeight, cameraHeight);
                     break;
@@ -129,5 +140,15 @@ public class WaveSpawner : MonoBehaviour
         {
             enemiesAlive = 0;
         }
+
+        score += instance != null ? instance.scorePerEnemy : 10;
+        instance?.UpdateUI();
+    }
+
+    private void UpdateUI()
+    {
+        GameUI.Instance?.SetWave(currentWave);
+        GameUI.Instance?.SetEnemies(enemiesAlive);
+        GameUI.Instance?.SetScore(score);
     }
 }
