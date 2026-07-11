@@ -4,9 +4,12 @@ using UnityEngine.SceneManagement;
 public class MainMenuController : MonoBehaviour
 {
     [SerializeField] private string storySceneName = "Story";
+
+    [Header("Panels")]
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject storyPanel;
     [SerializeField] private GameObject optionsPanel;
+    [SerializeField] private GameObject creditsPanel;
 
     private void Start()
     {
@@ -20,23 +23,22 @@ public class MainMenuController : MonoBehaviour
 
     public void ShowMainMenu()
     {
-        SetPanel(mainMenuPanel, true);
-        SetPanel(storyPanel, false);
-        SetPanel(optionsPanel, false);
+        SetOnlyPanel(mainMenuPanel);
     }
 
     public void ShowStory()
     {
-        SetPanel(mainMenuPanel, false);
-        SetPanel(storyPanel, true);
-        SetPanel(optionsPanel, false);
+        SetOnlyPanel(storyPanel);
     }
 
     public void ShowOptions()
     {
-        SetPanel(mainMenuPanel, false);
-        SetPanel(storyPanel, false);
-        SetPanel(optionsPanel, true);
+        SetOnlyPanel(optionsPanel);
+    }
+
+    public void ShowCredits()
+    {
+        SetOnlyPanel(creditsPanel);
     }
 
     public void QuitGame()
@@ -44,7 +46,15 @@ public class MainMenuController : MonoBehaviour
         Application.Quit();
     }
 
-    private void SetPanel(GameObject panel, bool active)
+    private void SetOnlyPanel(GameObject panelToShow)
+    {
+        SetPanel(mainMenuPanel, panelToShow == mainMenuPanel);
+        SetPanel(storyPanel, panelToShow == storyPanel);
+        SetPanel(optionsPanel, panelToShow == optionsPanel);
+        SetPanel(creditsPanel, panelToShow == creditsPanel);
+    }
+
+    private static void SetPanel(GameObject panel, bool active)
     {
         if (panel != null)
         {
