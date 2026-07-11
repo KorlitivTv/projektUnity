@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -9,12 +10,18 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private GameObject pausePanel;
 
     private bool isPaused;
+    private static Canvas runtimeOverlayCanvas;
 
     private void Awake()
     {
         if (pausePanel == null)
         {
             pausePanel = FindSceneObject("PausePanel");
+        }
+
+        if (pausePanel != null)
+        {
+            MoveToRuntimeOverlay(pausePanel, 9000);
         }
     }
 
@@ -62,19 +69,20 @@ public class PauseMenuController : MonoBehaviour
         if (pausePanel == null)
         {
             pausePanel = FindSceneObject("PausePanel");
+            if (pausePanel != null)
+            {
+                MoveToRuntimeOverlay(pausePanel, 9000);
+            }
         }
 
         isPaused = !isPaused;
 
         if (pausePanel != null)
         {
+            pausePanel.SetActive(isPaused);
             if (isPaused)
             {
-                ForcePanelVisible(pausePanel);
-            }
-            else
-            {
-                pausePanel.SetActive(false);
+                PreparePanel(pausePanel, new Vector2(650f, 500f));
             }
         }
 
@@ -114,48 +122,62 @@ public class PauseMenuController : MonoBehaviour
         Application.Quit();
     }
 
-    private static void ForcePanelVisible(GameObject panel)
+    private static void MoveToRuntimeOverlay(GameObject target, int sortingOrder)
     {
-        Transform current = panel.transform.parent;
-        while (current != null)
+        Canvas overlay = GetRuntimeOverlayCanvas(sortingOrder);
+        target.transform.SetParent(overlay.transform, false);
+        PreparePanel(target, new Vector2(650f, 500f));
+    }
+
+    private static Canvas GetRuntimeOverlayCanvas(int sortingOrder)
+    {
+        if (runtimeOverlayCanvas == null)
         {
-            current.gameObject.SetActive(true);
-            current = current.parent;
+            GameObject canvasObject = new GameObject("RuntimeMenuOverlay");
+            runtimeOverlayCanvas = canvasObject.AddComponent<Canvas>();
+            runtimeOverlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            runtimeOverlayCanvas.overrideSorting = true;
+
+            CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasObject.AddComponent<GraphicRaycaster>();
         }
 
+        runtimeOverlayCanvas.sortingOrder = sortingOrder;
+        return runtimeOverlayCanvas;
+    }
+
+    private static void PreparePanel(GameObject panel, Vector2 minimumSize)
+    {
         panel.SetActive(true);
         panel.transform.SetAsLastSibling();
 
         CanvasGroup group = panel.GetComponent<CanvasGroup>();
-        if (group != null)
+        if (group == null)
         {
-            group.alpha = 1f;
-            group.interactable = true;
-            group.blocksRaycasts = true;
+            group = panel.AddComponent<CanvasGroup>();
         }
+
+        group.alpha = 1f;
+        group.interactable = true;
+        group.blocksRaycasts = true;
 
         RectTransform rect = panel.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.localScale = Vector3.one;
-            rect.localRotation = Quaternion.identity;
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
-
-            if (rect.sizeDelta.x < 300f || rect.sizeDelta.y < 200f)
-            {
-                rect.sizeDelta = new Vector2(600f, 500f);
-            }
-        }
-
-        Canvas canvas = panel.GetComponentInParent<Canvas>(true);
-        if (canvas != null)
-        {
-            canvas.enabled = true;
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = 5000;
+            rect.localScale = Vector3.one;
+            rect.localRotation = Quaternion.identity;
+            rect.sizeDelta = new Vector2(
+                Mathf.Max(rect.sizeDelta.x, minimumSize.x),
+                Mathf.Max(rect.sizeDelta.y, minimumSize.y)
+            );
         }
     }
 
