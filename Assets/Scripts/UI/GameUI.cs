@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameUI : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class GameUI : MonoBehaviour
     [SerializeField] private float announcementFadeTime = 0.6f;
 
     private const string BestScoreKey = "BestScore";
+    private static Canvas runtimeOverlayCanvas;
 
     private void Awake()
     {
@@ -43,6 +45,16 @@ public class GameUI : MonoBehaviour
             {
                 waveAnnouncement = waveObject.GetComponent<TextMeshProUGUI>();
             }
+        }
+
+        if (gameOverPanel != null)
+        {
+            MoveToRuntimeOverlay(gameOverPanel, 10000, new Vector2(750f, 620f));
+        }
+
+        if (waveAnnouncement != null)
+        {
+            MoveToRuntimeOverlay(waveAnnouncement.gameObject, 11000, new Vector2(900f, 180f));
         }
 
         AutoAssignGameOverTexts();
@@ -110,6 +122,7 @@ public class GameUI : MonoBehaviour
             if (waveObject != null)
             {
                 waveAnnouncement = waveObject.GetComponent<TextMeshProUGUI>();
+                MoveToRuntimeOverlay(waveObject, 11000, new Vector2(900f, 180f));
             }
         }
 
@@ -119,18 +132,8 @@ public class GameUI : MonoBehaviour
             yield break;
         }
 
-        waveAnnouncement.text = isBossWave
-            ? "BOSS WAVE " + wave
-            : "WAVE " + wave;
-
-        ForceUiObjectVisible(waveAnnouncement.gameObject, 6000);
-
-        RectTransform rect = waveAnnouncement.rectTransform;
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = Vector2.zero;
-        rect.localScale = Vector3.one;
+        waveAnnouncement.text = isBossWave ? "BOSS WAVE " + wave : "WAVE " + wave;
+        PrepareUiObject(waveAnnouncement.gameObject, new Vector2(900f, 180f));
 
         Color color = waveAnnouncement.color;
         color.a = 1f;
@@ -164,6 +167,10 @@ public class GameUI : MonoBehaviour
         if (gameOverPanel == null)
         {
             gameOverPanel = FindSceneObject("GameOverPanel");
+            if (gameOverPanel != null)
+            {
+                MoveToRuntimeOverlay(gameOverPanel, 10000, new Vector2(750f, 620f));
+            }
             AutoAssignGameOverTexts();
         }
 
@@ -196,7 +203,7 @@ public class GameUI : MonoBehaviour
 
         if (gameOverPanel != null)
         {
-            ForceUiObjectVisible(gameOverPanel, 7000);
+            PrepareUiObject(gameOverPanel, new Vector2(750f, 620f));
             Time.timeScale = 0f;
         }
         else
@@ -231,48 +238,62 @@ public class GameUI : MonoBehaviour
         }
     }
 
-    private static void ForceUiObjectVisible(GameObject target, int sortingOrder)
+    private static void MoveToRuntimeOverlay(GameObject target, int sortingOrder, Vector2 minimumSize)
     {
-        Transform current = target.transform.parent;
-        while (current != null)
+        Canvas overlay = GetRuntimeOverlayCanvas(sortingOrder);
+        target.transform.SetParent(overlay.transform, false);
+        PrepareUiObject(target, minimumSize);
+    }
+
+    private static Canvas GetRuntimeOverlayCanvas(int sortingOrder)
+    {
+        if (runtimeOverlayCanvas == null)
         {
-            current.gameObject.SetActive(true);
-            current = current.parent;
+            GameObject canvasObject = new GameObject("RuntimeGameOverlay");
+            runtimeOverlayCanvas = canvasObject.AddComponent<Canvas>();
+            runtimeOverlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            runtimeOverlayCanvas.overrideSorting = true;
+
+            CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasObject.AddComponent<GraphicRaycaster>();
         }
 
+        runtimeOverlayCanvas.sortingOrder = Mathf.Max(runtimeOverlayCanvas.sortingOrder, sortingOrder);
+        return runtimeOverlayCanvas;
+    }
+
+    private static void PrepareUiObject(GameObject target, Vector2 minimumSize)
+    {
         target.SetActive(true);
         target.transform.SetAsLastSibling();
 
         CanvasGroup group = target.GetComponent<CanvasGroup>();
-        if (group != null)
+        if (group == null)
         {
-            group.alpha = 1f;
-            group.interactable = true;
-            group.blocksRaycasts = true;
+            group = target.AddComponent<CanvasGroup>();
         }
+
+        group.alpha = 1f;
+        group.interactable = true;
+        group.blocksRaycasts = true;
 
         RectTransform rect = target.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.localScale = Vector3.one;
-            rect.localRotation = Quaternion.identity;
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
-
-            if (target.name == "GameOverPanel" && (rect.sizeDelta.x < 300f || rect.sizeDelta.y < 200f))
-            {
-                rect.sizeDelta = new Vector2(700f, 600f);
-            }
-        }
-
-        Canvas canvas = target.GetComponentInParent<Canvas>(true);
-        if (canvas != null)
-        {
-            canvas.enabled = true;
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = sortingOrder;
+            rect.localScale = Vector3.one;
+            rect.localRotation = Quaternion.identity;
+            rect.sizeDelta = new Vector2(
+                Mathf.Max(rect.sizeDelta.x, minimumSize.x),
+                Mathf.Max(rect.sizeDelta.y, minimumSize.y)
+            );
         }
     }
 
