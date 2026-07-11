@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class MainMenuController : MonoBehaviour
 {
-    [SerializeField] private string gameSceneName = "Game";
+    [SerializeField] private string storySceneName = "Story";
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject storyPanel;
     [SerializeField] private GameObject optionsPanel;
@@ -15,7 +15,7 @@ public class MainMenuController : MonoBehaviour
 
     public void StartGame()
     {
-        SceneManager.LoadScene(gameSceneName);
+        SceneManager.LoadScene(storySceneName);
     }
 
     public void ShowMainMenu()
