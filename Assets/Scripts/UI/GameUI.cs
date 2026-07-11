@@ -6,19 +6,24 @@ public class GameUI : MonoBehaviour
 {
     public static GameUI Instance { get; private set; }
 
-    [Header("Text Labels")]
+    [Header("HUD Text Labels")]
     [SerializeField] private TextMeshProUGUI healthText;
     [SerializeField] private TextMeshProUGUI waveText;
     [SerializeField] private TextMeshProUGUI enemiesText;
     [SerializeField] private TextMeshProUGUI scoreText;
 
-    [Header("Panels")]
+    [Header("Game Over")]
     [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private TextMeshProUGUI finalScoreText;
+    [SerializeField] private TextMeshProUGUI bestScoreText;
+    [SerializeField] private TextMeshProUGUI waveReachedText;
 
     [Header("Wave Announcement")]
     [SerializeField] private TextMeshProUGUI waveAnnouncement;
     [SerializeField] private float announcementHoldTime = 1.2f;
     [SerializeField] private float announcementFadeTime = 0.6f;
+
+    private const string BestScoreKey = "BestScore";
 
     private void Awake()
     {
@@ -104,6 +109,33 @@ public class GameUI : MonoBehaviour
 
     public void ShowGameOver()
     {
+        int finalScore = WaveSpawner.CurrentScore;
+        int waveReached = WaveSpawner.CurrentWave;
+        int bestScore = PlayerPrefs.GetInt(BestScoreKey, 0);
+
+        if (finalScore > bestScore)
+        {
+            bestScore = finalScore;
+            PlayerPrefs.SetInt(BestScoreKey, bestScore);
+            PlayerPrefs.Save();
+        }
+
+        if (finalScoreText != null)
+        {
+            finalScoreText.text = "Final Score: " + finalScore;
+        }
+
+        if (bestScoreText != null)
+        {
+            bestScoreText.text = "Best Score: " + bestScore;
+        }
+
+        if (waveReachedText != null)
+        {
+            string waveWord = waveReached == 1 ? "wave" : "waves";
+            waveReachedText.text = "You survived " + waveReached + " " + waveWord;
+        }
+
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
