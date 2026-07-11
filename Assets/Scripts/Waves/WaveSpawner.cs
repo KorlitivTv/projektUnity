@@ -26,6 +26,9 @@ public class WaveSpawner : MonoBehaviour
     private int currentWave;
     private bool spawningWave;
 
+    public static int CurrentScore => score;
+    public static int CurrentWave => instance != null ? instance.currentWave : 0;
+
     private void Awake()
     {
         instance = this;
