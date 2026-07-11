@@ -16,10 +16,15 @@ public class WaveEnemy : MonoBehaviour
     [Header("Health Bar")]
     [SerializeField] private RectTransform healthBarFill;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip attackSound;
+    [SerializeField, Range(0f, 1f)] private float attackVolume = 1f;
+
     private Transform player;
     private Rigidbody2D rb;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    private AudioSource audioSource;
     private float nextDamageTime;
     private bool isDead;
     private int currentHealth;
@@ -34,6 +39,7 @@ public class WaveEnemy : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
         currentHealth = Mathf.Max(1, health);
 
         if (healthBarFill == null)
@@ -114,6 +120,11 @@ public class WaveEnemy : MonoBehaviour
             if (animator != null)
             {
                 animator.SetTrigger(AttackHash);
+            }
+
+            if (audioSource != null && attackSound != null)
+            {
+                audioSource.PlayOneShot(attackSound, attackVolume);
             }
 
             playerHealth.TakeDamage(touchDamage);
