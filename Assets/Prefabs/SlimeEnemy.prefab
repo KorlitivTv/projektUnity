@@ -375,6 +375,8 @@ MonoBehaviour:
   damageCooldown: 1.5
   deathDelay: 0.8
   healthBarFill: {fileID: 208285105460157816}
+  attackSound: {fileID: 8300000, guid: 0b44fcd7b0894425299a7b63dbe110ec, type: 3}
+  attackVolume: 1
 --- !u!95 &5212760568668327783
 Animator:
   serializedVersion: 7

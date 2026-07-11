@@ -5556,6 +5556,8 @@ MonoBehaviour:
   damage: 1
   activeTime: 0.15
   attackKey: 32
+  attackSound: {fileID: 8300000, guid: 3cbee9d2da82b4b4eacce0515f3c1c80, type: 3}
+  attackVolume: 1
 --- !u!61 &261279572
 BoxCollider2D:
   m_ObjectHideFlags: 0
