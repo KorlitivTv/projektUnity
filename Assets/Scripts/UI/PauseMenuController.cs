@@ -22,7 +22,15 @@ public class PauseMenuController : MonoBehaviour
     {
         Time.timeScale = 1f;
         isPaused = false;
-        SetPanelVisible(false);
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("PauseMenuController could not find PausePanel.");
+        }
     }
 
     private void Update()
@@ -51,9 +59,26 @@ public class PauseMenuController : MonoBehaviour
             return;
         }
 
+        if (pausePanel == null)
+        {
+            pausePanel = FindSceneObject("PausePanel");
+        }
+
         isPaused = !isPaused;
+
+        if (pausePanel != null)
+        {
+            if (isPaused)
+            {
+                ForcePanelVisible(pausePanel);
+            }
+            else
+            {
+                pausePanel.SetActive(false);
+            }
+        }
+
         Time.timeScale = isPaused ? 0f : 1f;
-        SetPanelVisible(isPaused);
     }
 
     public void Resume()
@@ -65,7 +90,11 @@ public class PauseMenuController : MonoBehaviour
 
         isPaused = false;
         Time.timeScale = 1f;
-        SetPanelVisible(false);
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(false);
+        }
     }
 
     public void Restart()
@@ -85,46 +114,48 @@ public class PauseMenuController : MonoBehaviour
         Application.Quit();
     }
 
-    private void SetPanelVisible(bool visible)
+    private static void ForcePanelVisible(GameObject panel)
     {
-        if (pausePanel == null)
+        Transform current = panel.transform.parent;
+        while (current != null)
         {
-            pausePanel = FindSceneObject("PausePanel");
+            current.gameObject.SetActive(true);
+            current = current.parent;
         }
 
-        if (pausePanel == null)
-        {
-            Debug.LogError("PauseMenuController could not find PausePanel.");
-            return;
-        }
+        panel.SetActive(true);
+        panel.transform.SetAsLastSibling();
 
-        EnsureParentsActive(pausePanel.transform.parent);
-        pausePanel.SetActive(visible);
-
-        CanvasGroup group = pausePanel.GetComponent<CanvasGroup>();
+        CanvasGroup group = panel.GetComponent<CanvasGroup>();
         if (group != null)
         {
             group.alpha = 1f;
-            group.interactable = visible;
-            group.blocksRaycasts = visible;
+            group.interactable = true;
+            group.blocksRaycasts = true;
         }
 
-        if (visible)
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        if (rect != null)
         {
-            pausePanel.transform.SetAsLastSibling();
-        }
-    }
+            rect.localScale = Vector3.one;
+            rect.localRotation = Quaternion.identity;
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
 
-    private static void EnsureParentsActive(Transform parent)
-    {
-        while (parent != null)
-        {
-            if (!parent.gameObject.activeSelf)
+            if (rect.sizeDelta.x < 300f || rect.sizeDelta.y < 200f)
             {
-                parent.gameObject.SetActive(true);
+                rect.sizeDelta = new Vector2(600f, 500f);
             }
+        }
 
-            parent = parent.parent;
+        Canvas canvas = panel.GetComponentInParent<Canvas>(true);
+        if (canvas != null)
+        {
+            canvas.enabled = true;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 5000;
         }
     }
 
