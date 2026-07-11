@@ -3,16 +3,21 @@ using UnityEngine;
 
 public class WaveSpawner : MonoBehaviour
 {
-    [Header("Enemy")]
+    [Header("Enemy Prefabs")]
     [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private GameObject bossPrefab;
     [SerializeField] private Transform[] spawnPoints;
 
     [Header("Wave Settings")]
     [SerializeField] private float timeBetweenSpawns = 0.75f;
     [SerializeField] private float timeBetweenWaves = 3f;
-    [SerializeField] private int enemiesInFirstWave = 3;
-    [SerializeField] private int enemiesAddedPerWave = 2;
+    [SerializeField] private int enemiesInFirstWave = 2;
+    [SerializeField] private int enemiesAddedPerWave = 1;
     [SerializeField] private int scorePerEnemy = 10;
+
+    [Header("Boss Settings")]
+    [SerializeField] private int bossEveryNWaves = 5;
+    [SerializeField] private int bossesPerBossWave = 1;
 
     private static WaveSpawner instance;
     private static int enemiesAlive;
@@ -47,27 +52,42 @@ public class WaveSpawner : MonoBehaviour
         spawningWave = true;
         currentWave++;
 
-        Debug.Log("Wave " + currentWave);
+        bool isBossWave = bossEveryNWaves > 0 && currentWave % bossEveryNWaves == 0;
+
+        Debug.Log(isBossWave ? "Boss Wave " + currentWave : "Wave " + currentWave);
         UpdateUI();
 
         yield return new WaitForSeconds(timeBetweenWaves);
 
-        int enemyCount = enemiesInFirstWave + (currentWave - 1) * enemiesAddedPerWave;
-
-        for (int i = 0; i < enemyCount; i++)
+        if (isBossWave)
         {
-            SpawnEnemy();
-            yield return new WaitForSeconds(timeBetweenSpawns);
+            int bossCount = Mathf.Max(1, bossesPerBossWave);
+
+            for (int i = 0; i < bossCount; i++)
+            {
+                SpawnPrefab(bossPrefab, "Boss Prefab");
+                yield return new WaitForSeconds(timeBetweenSpawns);
+            }
+        }
+        else
+        {
+            int enemyCount = enemiesInFirstWave + (currentWave - 1) * enemiesAddedPerWave;
+
+            for (int i = 0; i < enemyCount; i++)
+            {
+                SpawnPrefab(enemyPrefab, "Enemy Prefab");
+                yield return new WaitForSeconds(timeBetweenSpawns);
+            }
         }
 
         spawningWave = false;
     }
 
-    private void SpawnEnemy()
+    private void SpawnPrefab(GameObject prefab, string prefabName)
     {
-        if (enemyPrefab == null)
+        if (prefab == null)
         {
-            Debug.LogWarning("WaveSpawner is missing Enemy Prefab.");
+            Debug.LogWarning("WaveSpawner is missing " + prefabName + ".");
             return;
         }
 
@@ -78,7 +98,7 @@ public class WaveSpawner : MonoBehaviour
         }
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
-        Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
+        Instantiate(prefab, spawnPoint.position, Quaternion.identity);
 
         enemiesAlive++;
         UpdateUI();
