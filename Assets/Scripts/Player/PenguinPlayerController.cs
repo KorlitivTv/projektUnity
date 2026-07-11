@@ -16,7 +16,6 @@ public class PenguinPlayerController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Vector2 moveInput;
     private bool isSprinting;
-    private bool isAttacking;
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int SprintHash = Animator.StringToHash("Sprint");
@@ -31,6 +30,12 @@ public class PenguinPlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale <= 0f)
+        {
+            StopPlayerInput();
+            return;
+        }
+
         ReadInput();
         UpdateVisualDirection();
         UpdateAnimator();
@@ -38,6 +43,11 @@ public class PenguinPlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (Time.timeScale <= 0f)
+        {
+            return;
+        }
+
         Move();
     }
 
@@ -77,5 +87,14 @@ public class PenguinPlayerController : MonoBehaviour
     {
         animator.SetFloat(SpeedHash, moveInput.sqrMagnitude);
         animator.SetBool(SprintHash, isSprinting);
+    }
+
+    private void StopPlayerInput()
+    {
+        moveInput = Vector2.zero;
+        isSprinting = false;
+        rb.linearVelocity = Vector2.zero;
+        animator.SetFloat(SpeedHash, 0f);
+        animator.SetBool(SprintHash, false);
     }
 }
