@@ -49,15 +49,16 @@ public class GameUI : MonoBehaviour
 
         if (gameOverPanel != null)
         {
-            MoveToRuntimeOverlay(gameOverPanel, 10000, new Vector2(750f, 620f));
+            MoveToRuntimeOverlay(gameOverPanel, 10000, new Vector2(700f, 620f));
+            AutoAssignGameOverTexts();
+            LayoutGameOverPanel();
         }
 
         if (waveAnnouncement != null)
         {
             MoveToRuntimeOverlay(waveAnnouncement.gameObject, 11000, new Vector2(900f, 180f));
+            LayoutWaveAnnouncement();
         }
-
-        AutoAssignGameOverTexts();
     }
 
     private void Start()
@@ -123,6 +124,7 @@ public class GameUI : MonoBehaviour
             {
                 waveAnnouncement = waveObject.GetComponent<TextMeshProUGUI>();
                 MoveToRuntimeOverlay(waveObject, 11000, new Vector2(900f, 180f));
+                LayoutWaveAnnouncement();
             }
         }
 
@@ -133,10 +135,10 @@ public class GameUI : MonoBehaviour
         }
 
         waveAnnouncement.text = isBossWave ? "BOSS WAVE " + wave : "WAVE " + wave;
-        PrepareUiObject(waveAnnouncement.gameObject, new Vector2(900f, 180f));
+        PrepareUiObject(waveAnnouncement.gameObject, new Vector2(900f, 180f), exactSize: true);
+        LayoutWaveAnnouncement();
 
-        Color color = waveAnnouncement.color;
-        color.a = 1f;
+        Color color = isBossWave ? new Color(1f, 0.35f, 0.2f, 1f) : Color.white;
         waveAnnouncement.color = color;
 
         yield return new WaitForSecondsRealtime(announcementHoldTime);
@@ -169,9 +171,9 @@ public class GameUI : MonoBehaviour
             gameOverPanel = FindSceneObject("GameOverPanel");
             if (gameOverPanel != null)
             {
-                MoveToRuntimeOverlay(gameOverPanel, 10000, new Vector2(750f, 620f));
+                MoveToRuntimeOverlay(gameOverPanel, 10000, new Vector2(700f, 620f));
+                AutoAssignGameOverTexts();
             }
-            AutoAssignGameOverTexts();
         }
 
         int finalScore = WaveSpawner.CurrentScore;
@@ -203,7 +205,8 @@ public class GameUI : MonoBehaviour
 
         if (gameOverPanel != null)
         {
-            PrepareUiObject(gameOverPanel, new Vector2(750f, 620f));
+            PrepareUiObject(gameOverPanel, new Vector2(700f, 620f), exactSize: true);
+            LayoutGameOverPanel();
             Time.timeScale = 0f;
         }
         else
@@ -238,11 +241,145 @@ public class GameUI : MonoBehaviour
         }
     }
 
-    private static void MoveToRuntimeOverlay(GameObject target, int sortingOrder, Vector2 minimumSize)
+    private void LayoutGameOverPanel()
+    {
+        if (gameOverPanel == null)
+        {
+            return;
+        }
+
+        RectTransform panelRect = gameOverPanel.GetComponent<RectTransform>();
+        if (panelRect != null)
+        {
+            panelRect.sizeDelta = new Vector2(700f, 620f);
+            panelRect.anchoredPosition = Vector2.zero;
+        }
+
+        Image background = gameOverPanel.GetComponent<Image>();
+        if (background != null)
+        {
+            background.sprite = null;
+            background.type = Image.Type.Simple;
+            background.color = new Color(0.035f, 0.035f, 0.055f, 0.96f);
+        }
+
+        LayoutText("Game Over", new Vector2(0f, 220f), new Vector2(620f, 90f), 58f, FontStyles.Bold);
+        LayoutText("FinalScoreText", new Vector2(0f, 90f), new Vector2(560f, 55f), 32f, FontStyles.Normal);
+        LayoutText("BestScoreText", new Vector2(0f, 30f), new Vector2(560f, 55f), 32f, FontStyles.Normal);
+        LayoutText("WaveReachedText", new Vector2(0f, -30f), new Vector2(560f, 55f), 30f, FontStyles.Normal);
+
+        LayoutButton("Restart", new Vector2(0f, -145f), new Vector2(320f, 62f));
+        LayoutButton("Main Menu", new Vector2(0f, -225f), new Vector2(320f, 62f));
+    }
+
+    private void LayoutWaveAnnouncement()
+    {
+        if (waveAnnouncement == null)
+        {
+            return;
+        }
+
+        RectTransform rect = waveAnnouncement.rectTransform;
+        rect.sizeDelta = new Vector2(900f, 180f);
+        rect.anchoredPosition = Vector2.zero;
+
+        waveAnnouncement.fontSize = 64f;
+        waveAnnouncement.fontStyle = FontStyles.Bold;
+        waveAnnouncement.alignment = TextAlignmentOptions.Center;
+        waveAnnouncement.enableAutoSizing = false;
+        waveAnnouncement.raycastTarget = false;
+    }
+
+    private void LayoutText(string objectName, Vector2 position, Vector2 size, float fontSize, FontStyles style)
+    {
+        Transform child = FindChildRecursive(gameOverPanel.transform, objectName);
+        if (child == null)
+        {
+            return;
+        }
+
+        RectTransform rect = child.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            SetCenteredRect(rect, position, size);
+        }
+
+        TextMeshProUGUI text = child.GetComponent<TextMeshProUGUI>();
+        if (text != null)
+        {
+            text.fontSize = fontSize;
+            text.fontStyle = style;
+            text.alignment = TextAlignmentOptions.Center;
+            text.enableAutoSizing = false;
+            text.color = Color.white;
+        }
+    }
+
+    private void LayoutButton(string objectName, Vector2 position, Vector2 size)
+    {
+        Transform child = FindChildRecursive(gameOverPanel.transform, objectName);
+        if (child == null)
+        {
+            return;
+        }
+
+        RectTransform rect = child.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            SetCenteredRect(rect, position, size);
+        }
+
+        Image image = child.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = new Color(0.18f, 0.18f, 0.24f, 1f);
+        }
+
+        TextMeshProUGUI label = child.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null)
+        {
+            label.fontSize = 28f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.enableAutoSizing = false;
+            label.color = Color.white;
+        }
+    }
+
+    private static void SetCenteredRect(RectTransform rect, Vector2 position, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+    }
+
+    private static Transform FindChildRecursive(Transform parent, string objectName)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == objectName)
+            {
+                return child;
+            }
+
+            Transform result = FindChildRecursive(child, objectName);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private static void MoveToRuntimeOverlay(GameObject target, int sortingOrder, Vector2 size)
     {
         Canvas overlay = GetRuntimeOverlayCanvas(sortingOrder);
         target.transform.SetParent(overlay.transform, false);
-        PrepareUiObject(target, minimumSize);
+        PrepareUiObject(target, size, exactSize: true);
     }
 
     private static Canvas GetRuntimeOverlayCanvas(int sortingOrder)
@@ -266,7 +403,7 @@ public class GameUI : MonoBehaviour
         return runtimeOverlayCanvas;
     }
 
-    private static void PrepareUiObject(GameObject target, Vector2 minimumSize)
+    private static void PrepareUiObject(GameObject target, Vector2 size, bool exactSize)
     {
         target.SetActive(true);
         target.transform.SetAsLastSibling();
@@ -290,10 +427,9 @@ public class GameUI : MonoBehaviour
             rect.anchoredPosition = Vector2.zero;
             rect.localScale = Vector3.one;
             rect.localRotation = Quaternion.identity;
-            rect.sizeDelta = new Vector2(
-                Mathf.Max(rect.sizeDelta.x, minimumSize.x),
-                Mathf.Max(rect.sizeDelta.y, minimumSize.y)
-            );
+            rect.sizeDelta = exactSize
+                ? size
+                : new Vector2(Mathf.Max(rect.sizeDelta.x, size.x), Mathf.Max(rect.sizeDelta.y, size.y));
         }
     }
 
