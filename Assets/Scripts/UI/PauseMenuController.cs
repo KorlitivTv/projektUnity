@@ -22,19 +22,16 @@ public class PauseMenuController : MonoBehaviour
     {
         Time.timeScale = 1f;
         isPaused = false;
-
-        if (pausePanel != null)
-        {
-            pausePanel.SetActive(false);
-        }
-        else
-        {
-            Debug.LogError("PauseMenuController could not find PausePanel.");
-        }
+        SetPanelVisible(false);
     }
 
     private void Update()
     {
+        if (GameUI.IsGameOver)
+        {
+            return;
+        }
+
         bool escapePressed = Input.GetKeyDown(KeyCode.Escape);
 
 #if ENABLE_INPUT_SYSTEM
@@ -49,30 +46,26 @@ public class PauseMenuController : MonoBehaviour
 
     public void TogglePause()
     {
-        if (pausePanel == null)
+        if (GameUI.IsGameOver)
         {
-            pausePanel = FindSceneObject("PausePanel");
+            return;
         }
 
         isPaused = !isPaused;
         Time.timeScale = isPaused ? 0f : 1f;
-
-        if (pausePanel != null)
-        {
-            pausePanel.SetActive(isPaused);
-            pausePanel.transform.SetAsLastSibling();
-        }
+        SetPanelVisible(isPaused);
     }
 
     public void Resume()
     {
+        if (GameUI.IsGameOver)
+        {
+            return;
+        }
+
         isPaused = false;
         Time.timeScale = 1f;
-
-        if (pausePanel != null)
-        {
-            pausePanel.SetActive(false);
-        }
+        SetPanelVisible(false);
     }
 
     public void Restart()
@@ -90,6 +83,49 @@ public class PauseMenuController : MonoBehaviour
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    private void SetPanelVisible(bool visible)
+    {
+        if (pausePanel == null)
+        {
+            pausePanel = FindSceneObject("PausePanel");
+        }
+
+        if (pausePanel == null)
+        {
+            Debug.LogError("PauseMenuController could not find PausePanel.");
+            return;
+        }
+
+        EnsureParentsActive(pausePanel.transform.parent);
+        pausePanel.SetActive(visible);
+
+        CanvasGroup group = pausePanel.GetComponent<CanvasGroup>();
+        if (group != null)
+        {
+            group.alpha = 1f;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
+        }
+
+        if (visible)
+        {
+            pausePanel.transform.SetAsLastSibling();
+        }
+    }
+
+    private static void EnsureParentsActive(Transform parent)
+    {
+        while (parent != null)
+        {
+            if (!parent.gameObject.activeSelf)
+            {
+                parent.gameObject.SetActive(true);
+            }
+
+            parent = parent.parent;
+        }
     }
 
     private static GameObject FindSceneObject(string objectName)
