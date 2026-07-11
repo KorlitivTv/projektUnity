@@ -13,12 +13,16 @@ public class WaveEnemy : MonoBehaviour
     [SerializeField] private float damageCooldown = 1f;
     [SerializeField] private float deathDelay = 0.8f;
 
+    [Header("Health Bar")]
+    [SerializeField] private RectTransform healthBarFill;
+
     private Transform player;
     private Rigidbody2D rb;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
     private float nextDamageTime;
     private bool isDead;
+    private int currentHealth;
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int AttackHash = Animator.StringToHash("Attack");
@@ -30,6 +34,18 @@ public class WaveEnemy : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        currentHealth = Mathf.Max(1, health);
+
+        if (healthBarFill == null)
+        {
+            Transform fill = transform.Find("Canvas/Background/Fill");
+            if (fill != null)
+            {
+                healthBarFill = fill.GetComponent<RectTransform>();
+            }
+        }
+
+        UpdateHealthBar();
     }
 
     private void Start()
@@ -59,14 +75,15 @@ public class WaveEnemy : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
-        if (isDead)
+        if (isDead || amount <= 0)
         {
             return;
         }
 
-        health -= amount;
+        currentHealth = Mathf.Max(0, currentHealth - amount);
+        UpdateHealthBar();
 
-        if (health <= 0)
+        if (currentHealth <= 0)
         {
             StartCoroutine(Die());
             return;
@@ -126,6 +143,19 @@ public class WaveEnemy : MonoBehaviour
 
         yield return new WaitForSeconds(deathDelay);
         Destroy(gameObject);
+    }
+
+    private void UpdateHealthBar()
+    {
+        if (healthBarFill == null)
+        {
+            return;
+        }
+
+        float healthPercent = Mathf.Clamp01((float)currentHealth / Mathf.Max(1, health));
+        Vector3 fillScale = healthBarFill.localScale;
+        fillScale.x = healthPercent;
+        healthBarFill.localScale = fillScale;
     }
 
     private void SetAnimationSpeed(float speed)
