@@ -38,10 +38,10 @@ public class GameUI : MonoBehaviour
 
         if (waveAnnouncement == null)
         {
-            GameObject announcementObject = FindSceneObject("WaveAnnouncement");
-            if (announcementObject != null)
+            GameObject waveObject = FindSceneObject("WaveAnnouncement");
+            if (waveObject != null)
             {
-                waveAnnouncement = announcementObject.GetComponent<TextMeshProUGUI>();
+                waveAnnouncement = waveObject.GetComponent<TextMeshProUGUI>();
             }
         }
 
@@ -50,8 +50,24 @@ public class GameUI : MonoBehaviour
 
     private void Start()
     {
-        SetUiObjectVisible(gameOverPanel, false);
-        SetTextVisible(waveAnnouncement, false);
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
+
+        if (waveAnnouncement != null)
+        {
+            waveAnnouncement.gameObject.SetActive(false);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+            IsGameOver = false;
+        }
     }
 
     public void SetHealth(int currentHealth, int maxHealth)
@@ -90,16 +106,16 @@ public class GameUI : MonoBehaviour
     {
         if (waveAnnouncement == null)
         {
-            GameObject announcementObject = FindSceneObject("WaveAnnouncement");
-            if (announcementObject != null)
+            GameObject waveObject = FindSceneObject("WaveAnnouncement");
+            if (waveObject != null)
             {
-                waveAnnouncement = announcementObject.GetComponent<TextMeshProUGUI>();
+                waveAnnouncement = waveObject.GetComponent<TextMeshProUGUI>();
             }
         }
 
         if (waveAnnouncement == null)
         {
-            Debug.LogError("GameUI could not find WaveAnnouncement.");
+            Debug.LogWarning("WaveAnnouncement could not be found.");
             yield break;
         }
 
@@ -107,9 +123,14 @@ public class GameUI : MonoBehaviour
             ? "BOSS WAVE " + wave
             : "WAVE " + wave;
 
-        EnsureParentsActive(waveAnnouncement.transform.parent);
-        waveAnnouncement.transform.SetAsLastSibling();
-        SetTextVisible(waveAnnouncement, true);
+        ForceUiObjectVisible(waveAnnouncement.gameObject, 6000);
+
+        RectTransform rect = waveAnnouncement.rectTransform;
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.localScale = Vector3.one;
 
         Color color = waveAnnouncement.color;
         color.a = 1f;
@@ -128,7 +149,7 @@ public class GameUI : MonoBehaviour
             yield return null;
         }
 
-        SetTextVisible(waveAnnouncement, false);
+        waveAnnouncement.gameObject.SetActive(false);
     }
 
     public void ShowGameOver()
@@ -175,9 +196,7 @@ public class GameUI : MonoBehaviour
 
         if (gameOverPanel != null)
         {
-            EnsureParentsActive(gameOverPanel.transform.parent);
-            SetUiObjectVisible(gameOverPanel, true);
-            gameOverPanel.transform.SetAsLastSibling();
+            ForceUiObjectVisible(gameOverPanel, 7000);
             Time.timeScale = 0f;
         }
         else
@@ -212,47 +231,48 @@ public class GameUI : MonoBehaviour
         }
     }
 
-    private static void SetUiObjectVisible(GameObject target, bool visible)
+    private static void ForceUiObjectVisible(GameObject target, int sortingOrder)
     {
-        if (target == null)
+        Transform current = target.transform.parent;
+        while (current != null)
         {
-            return;
+            current.gameObject.SetActive(true);
+            current = current.parent;
         }
 
-        target.SetActive(visible);
+        target.SetActive(true);
+        target.transform.SetAsLastSibling();
 
         CanvasGroup group = target.GetComponent<CanvasGroup>();
         if (group != null)
         {
             group.alpha = 1f;
-            group.interactable = visible;
-            group.blocksRaycasts = visible;
-        }
-    }
-
-    private static void SetTextVisible(TextMeshProUGUI target, bool visible)
-    {
-        if (target == null)
-        {
-            return;
+            group.interactable = true;
+            group.blocksRaycasts = true;
         }
 
-        target.gameObject.SetActive(visible);
-        Color color = target.color;
-        color.a = visible ? 1f : 0f;
-        target.color = color;
-    }
-
-    private static void EnsureParentsActive(Transform parent)
-    {
-        while (parent != null)
+        RectTransform rect = target.GetComponent<RectTransform>();
+        if (rect != null)
         {
-            if (!parent.gameObject.activeSelf)
+            rect.localScale = Vector3.one;
+            rect.localRotation = Quaternion.identity;
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+
+            if (target.name == "GameOverPanel" && (rect.sizeDelta.x < 300f || rect.sizeDelta.y < 200f))
             {
-                parent.gameObject.SetActive(true);
+                rect.sizeDelta = new Vector2(700f, 600f);
             }
+        }
 
-            parent = parent.parent;
+        Canvas canvas = target.GetComponentInParent<Canvas>(true);
+        if (canvas != null)
+        {
+            canvas.enabled = true;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = sortingOrder;
         }
     }
 
