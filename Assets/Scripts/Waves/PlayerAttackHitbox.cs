@@ -33,6 +33,16 @@ public class PlayerAttackHitbox : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale <= 0f)
+        {
+            if (hitboxCollider != null)
+            {
+                hitboxCollider.enabled = false;
+            }
+
+            return;
+        }
+
         if (Input.GetKeyDown(attackKey))
         {
             if (hitboxCollider != null)
@@ -52,6 +62,11 @@ public class PlayerAttackHitbox : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (Time.timeScale <= 0f)
+        {
+            return;
+        }
+
         WaveEnemy enemy = other.GetComponent<WaveEnemy>();
 
         if (enemy != null)
