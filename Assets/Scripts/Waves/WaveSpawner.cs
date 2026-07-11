@@ -57,6 +57,11 @@ public class WaveSpawner : MonoBehaviour
         Debug.Log(isBossWave ? "Boss Wave " + currentWave : "Wave " + currentWave);
         UpdateUI();
 
+        if (GameUI.Instance != null)
+        {
+            yield return StartCoroutine(GameUI.Instance.ShowWaveAnnouncement(currentWave, isBossWave));
+        }
+
         yield return new WaitForSeconds(timeBetweenWaves);
 
         if (isBossWave)
