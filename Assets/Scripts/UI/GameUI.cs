@@ -28,6 +28,13 @@ public class GameUI : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+
+        if (gameOverPanel == null)
+        {
+            gameOverPanel = FindSceneObject("GameOverPanel");
+        }
+
+        AutoAssignGameOverTexts();
     }
 
     private void Start()
@@ -35,6 +42,10 @@ public class GameUI : MonoBehaviour
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("GameUI could not find GameOverPanel.");
         }
 
         if (waveAnnouncement != null)
@@ -109,6 +120,12 @@ public class GameUI : MonoBehaviour
 
     public void ShowGameOver()
     {
+        if (gameOverPanel == null)
+        {
+            gameOverPanel = FindSceneObject("GameOverPanel");
+            AutoAssignGameOverTexts();
+        }
+
         int finalScore = WaveSpawner.CurrentScore;
         int waveReached = WaveSpawner.CurrentWave;
         int bestScore = PlayerPrefs.GetInt(BestScoreKey, 0);
@@ -139,6 +156,56 @@ public class GameUI : MonoBehaviour
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
+            gameOverPanel.transform.SetAsLastSibling();
+            Time.timeScale = 0f;
         }
+        else
+        {
+            Debug.LogError("Game Over triggered, but GameOverPanel could not be found.");
+        }
+    }
+
+    private void AutoAssignGameOverTexts()
+    {
+        if (gameOverPanel == null)
+        {
+            return;
+        }
+
+        TextMeshProUGUI[] labels = gameOverPanel.GetComponentsInChildren<TextMeshProUGUI>(true);
+
+        foreach (TextMeshProUGUI label in labels)
+        {
+            if (finalScoreText == null && label.name == "FinalScoreText")
+            {
+                finalScoreText = label;
+            }
+            else if (bestScoreText == null && label.name == "BestScoreText")
+            {
+                bestScoreText = label;
+            }
+            else if (waveReachedText == null && label.name == "WaveReachedText")
+            {
+                waveReachedText = label;
+            }
+        }
+    }
+
+    private static GameObject FindSceneObject(string objectName)
+    {
+        Transform[] transforms = Object.FindObjectsByType<Transform>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        foreach (Transform candidate in transforms)
+        {
+            if (candidate.gameObject.scene.isLoaded && candidate.name == objectName)
+            {
+                return candidate.gameObject;
+            }
+        }
+
+        return null;
     }
 }
