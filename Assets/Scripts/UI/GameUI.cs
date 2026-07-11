@@ -5,6 +5,7 @@ using UnityEngine;
 public class GameUI : MonoBehaviour
 {
     public static GameUI Instance { get; private set; }
+    public static bool IsGameOver { get; private set; }
 
     [Header("HUD Text Labels")]
     [SerializeField] private TextMeshProUGUI healthText;
@@ -28,10 +29,20 @@ public class GameUI : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        IsGameOver = false;
 
         if (gameOverPanel == null)
         {
             gameOverPanel = FindSceneObject("GameOverPanel");
+        }
+
+        if (waveAnnouncement == null)
+        {
+            GameObject announcementObject = FindSceneObject("WaveAnnouncement");
+            if (announcementObject != null)
+            {
+                waveAnnouncement = announcementObject.GetComponent<TextMeshProUGUI>();
+            }
         }
 
         AutoAssignGameOverTexts();
@@ -39,19 +50,8 @@ public class GameUI : MonoBehaviour
 
     private void Start()
     {
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
-        }
-        else
-        {
-            Debug.LogError("GameUI could not find GameOverPanel.");
-        }
-
-        if (waveAnnouncement != null)
-        {
-            waveAnnouncement.gameObject.SetActive(false);
-        }
+        SetUiObjectVisible(gameOverPanel, false);
+        SetTextVisible(waveAnnouncement, false);
     }
 
     public void SetHealth(int currentHealth, int maxHealth)
@@ -90,6 +90,16 @@ public class GameUI : MonoBehaviour
     {
         if (waveAnnouncement == null)
         {
+            GameObject announcementObject = FindSceneObject("WaveAnnouncement");
+            if (announcementObject != null)
+            {
+                waveAnnouncement = announcementObject.GetComponent<TextMeshProUGUI>();
+            }
+        }
+
+        if (waveAnnouncement == null)
+        {
+            Debug.LogError("GameUI could not find WaveAnnouncement.");
             yield break;
         }
 
@@ -97,29 +107,39 @@ public class GameUI : MonoBehaviour
             ? "BOSS WAVE " + wave
             : "WAVE " + wave;
 
+        EnsureParentsActive(waveAnnouncement.transform.parent);
+        waveAnnouncement.transform.SetAsLastSibling();
+        SetTextVisible(waveAnnouncement, true);
+
         Color color = waveAnnouncement.color;
         color.a = 1f;
         waveAnnouncement.color = color;
-        waveAnnouncement.gameObject.SetActive(true);
 
-        yield return new WaitForSeconds(announcementHoldTime);
+        yield return new WaitForSecondsRealtime(announcementHoldTime);
 
         float elapsed = 0f;
         float fadeTime = Mathf.Max(0.01f, announcementFadeTime);
 
         while (elapsed < fadeTime)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             color.a = Mathf.Lerp(1f, 0f, elapsed / fadeTime);
             waveAnnouncement.color = color;
             yield return null;
         }
 
-        waveAnnouncement.gameObject.SetActive(false);
+        SetTextVisible(waveAnnouncement, false);
     }
 
     public void ShowGameOver()
     {
+        if (IsGameOver)
+        {
+            return;
+        }
+
+        IsGameOver = true;
+
         if (gameOverPanel == null)
         {
             gameOverPanel = FindSceneObject("GameOverPanel");
@@ -155,7 +175,8 @@ public class GameUI : MonoBehaviour
 
         if (gameOverPanel != null)
         {
-            gameOverPanel.SetActive(true);
+            EnsureParentsActive(gameOverPanel.transform.parent);
+            SetUiObjectVisible(gameOverPanel, true);
             gameOverPanel.transform.SetAsLastSibling();
             Time.timeScale = 0f;
         }
@@ -188,6 +209,50 @@ public class GameUI : MonoBehaviour
             {
                 waveReachedText = label;
             }
+        }
+    }
+
+    private static void SetUiObjectVisible(GameObject target, bool visible)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.SetActive(visible);
+
+        CanvasGroup group = target.GetComponent<CanvasGroup>();
+        if (group != null)
+        {
+            group.alpha = 1f;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
+        }
+    }
+
+    private static void SetTextVisible(TextMeshProUGUI target, bool visible)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.gameObject.SetActive(visible);
+        Color color = target.color;
+        color.a = visible ? 1f : 0f;
+        target.color = color;
+    }
+
+    private static void EnsureParentsActive(Transform parent)
+    {
+        while (parent != null)
+        {
+            if (!parent.gameObject.activeSelf)
+            {
+                parent.gameObject.SetActive(true);
+            }
+
+            parent = parent.parent;
         }
     }
 
