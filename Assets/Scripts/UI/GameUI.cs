@@ -23,11 +23,6 @@ public class GameUI : MonoBehaviour
         {
             gameOverPanel.SetActive(false);
         }
-
-        SetHealth(5, 5);
-        SetWave(1);
-        SetEnemies(0);
-        SetScore(0);
     }
 
     public void SetHealth(int currentHealth, int maxHealth)
