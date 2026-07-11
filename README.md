@@ -1,4 +1,5 @@
 # 🐧 Slime Siege
+A Nyálkakirály árnyékában
 
 > **2D Endless Survival Game** developed with **Unity 6**.
 
