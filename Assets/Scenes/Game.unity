@@ -31337,6 +31337,9 @@ MonoBehaviour:
   enemiesText: {fileID: 1093010429}
   scoreText: {fileID: 1835903880}
   gameOverPanel: {fileID: 205467455}
+  waveAnnouncement: {fileID: 884547593}
+  announcementHoldTime: 1.2
+  announcementFadeTime: 0.6
 --- !u!1001 &1563677320
 PrefabInstance:
   m_ObjectHideFlags: 0
